@@ -1,7 +1,7 @@
 {
-  "name": "Envelope Budget",
-  "short_name": "Envelopes",
-  "description": "Track spending together with envelope budgeting",
+  "name": "Kayvin",
+  "short_name": "Kayvin",
+  "description": "Kevin & Kaydee's shared life OS — budget, debt payoff, and habits",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
