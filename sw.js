@@ -1,9 +1,14 @@
-const CACHE_NAME = 'kayvin-v3';
+const CACHE_NAME = 'kayvin-v4';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
-  './app.js',
+  './js/core.js',
+  './js/router.js',
+  './js/budget.js',
+  './js/debt.js',
+  './js/habits.js',
+  './js/main.js',
   './manifest.json',
 ];
 

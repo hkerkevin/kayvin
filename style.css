@@ -301,6 +301,69 @@ input, button, select {
 }
 
 /* ============================================
+   HOME LAUNCHER
+   ============================================ */
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+}
+
+.module-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.module-tile {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 14px;
+  text-align: left;
+  background: var(--card);
+  border: none;
+  border-left: 4px solid var(--tile-color, var(--primary));
+  border-radius: var(--radius);
+  padding: 18px 18px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+
+.module-tile:active {
+  transform: scale(0.98);
+}
+
+.module-emoji {
+  grid-row: 1 / 3;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.module-name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.module-stat {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.spacer-sm {
+  height: calc(24px + var(--safe-bottom));
+}
+
+/* ============================================
    PERIOD SWITCHER
    ============================================ */
 .period-switcher {
@@ -500,6 +563,270 @@ input, button, select {
 
 .empty-state p {
   font-size: 15px;
+}
+
+/* ============================================
+   DEBT
+   ============================================ */
+.debt-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.btn-mini {
+  background: none;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  border-radius: 14px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btn-mini:active { opacity: 0.7; }
+.btn-mini.ghost { border-color: var(--border); color: var(--text-secondary); }
+.btn-mini.add { border: none; background: var(--primary); color: white; padding: 8px 16px; }
+
+.debt-payments {
+  margin-top: 20px;
+}
+
+/* ============================================
+   PAYOFF PLANNER
+   ============================================ */
+.payoff-hero { text-align: center; }
+
+.payoff-hero-value {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin: 4px 0 2px;
+}
+
+.payoff-hero-value.negative { color: var(--red); }
+
+.payoff-hero-sub {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.payoff-saved {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.payoff-saved strong { color: var(--green); }
+
+.payoff-controls .payoff-row-col {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.seg {
+  display: flex;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 3px;
+}
+
+.seg-btn {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.seg-btn.active {
+  background: var(--card);
+  color: var(--primary);
+  box-shadow: var(--shadow);
+}
+
+.seg-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+.inline-input {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  color: var(--text-secondary);
+}
+
+.inline-input input {
+  border: none;
+  background: none;
+  outline: none;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  width: 84px;
+  text-align: right;
+}
+
+.payoff-compare {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.compare-card {
+  flex: 1;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.compare-card.active { border-color: var(--primary); }
+
+.compare-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.compare-main {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 6px 0 2px;
+}
+
+.compare-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.order-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  margin-right: 8px;
+}
+
+.mini-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0 4px;
+}
+
+.field-input.mini {
+  width: auto;
+  flex: 1;
+  min-width: 90px;
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.mini-form .inline-input { padding: 7px 10px; }
+.mini-form .inline-input input { width: 70px; }
+
+/* ============================================
+   HABITS
+   ============================================ */
+.habits-daynav { display: flex; gap: 6px; }
+
+.habit-group { margin-bottom: 18px; }
+
+.habit-group-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 4px;
+}
+
+.habit-owner {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.habit-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.habit-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.habit-row:last-child { border-bottom: none; }
+
+.habit-check {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--text-tertiary);
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.habit-name {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.habit-row.done .habit-name {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+
+.habit-streak {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--orange);
+}
+
+.field-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin: -12px 0 16px;
 }
 
 /* ============================================
@@ -979,6 +1306,7 @@ input, button, select {
 }
 
 .nav-btn {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -989,7 +1317,7 @@ input, button, select {
   font-size: 10px;
   font-weight: 500;
   cursor: pointer;
-  padding: 6px 20px;
+  padding: 6px 4px;
   transition: color 0.2s;
 }
 

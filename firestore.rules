@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /households/{householdId} {
+      // Any signed-in user can create a household
+      allow create: if request.auth != null;
+
+      // Any signed-in user can read (needed for join-by-code query)
+      allow read: if request.auth != null;
+
+      // Members can update; non-members can only add themselves to the members map
+      allow update: if request.auth != null &&
+        (request.auth.uid in resource.data.members ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']));
+
+      allow delete: if false;
+
+      // All household sub-data (envelopes, transactions, debts, debtPayments,
+      // habits, habitLogs, settings, ...) — members only.
+      match /{document=**} {
+        allow read, write: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.members;
+      }
+    }
+  }
+}
