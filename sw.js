@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kayvin-v4';
+const CACHE_NAME = 'kayvin-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -26,20 +26,20 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// Network-first: always try the network so deploys show up immediately;
+// fall back to cache only when offline. (Cache-first caused stale PWAs.)
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  if (e.request.url.includes('firestore') || e.request.url.includes('googleapis') || e.request.url.includes('gstatic')) return;
+  const url = e.request.url;
+  if (url.includes('firestore') || url.includes('googleapis') || url.includes('gstatic')) return;
 
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      const network = fetch(e.request).then(res => {
-        if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-        }
-        return res;
-      }).catch(() => cached);
-      return cached || network;
-    })
+    fetch(e.request).then(res => {
+      if (res.ok) {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+      }
+      return res;
+    }).catch(() => caches.match(e.request))
   );
 });
