@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kayvin-v5';
+const CACHE_NAME = 'kayvin-v6';
 const ASSETS = [
   './',
   './index.html',

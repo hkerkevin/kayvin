@@ -327,9 +327,8 @@ input, button, select {
   align-items: center;
   column-gap: 14px;
   text-align: left;
-  background: var(--card);
+  background: var(--tile-color, var(--primary));
   border: none;
-  border-left: 4px solid var(--tile-color, var(--primary));
   border-radius: var(--radius);
   padding: 18px 18px;
   box-shadow: var(--shadow);
@@ -351,11 +350,12 @@ input, button, select {
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.3px;
+  color: #fff;
 }
 
 .module-stat {
   font-size: 13px;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.88);
   font-weight: 500;
 }
 
