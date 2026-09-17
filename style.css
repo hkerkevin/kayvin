@@ -301,6 +301,74 @@ input, button, select {
 }
 
 /* ============================================
+   PERIOD SWITCHER
+   ============================================ */
+.period-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 16px;
+}
+
+.period-nav {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--primary);
+  border-radius: var(--radius-sm);
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s, opacity 0.15s;
+}
+
+.period-nav:active {
+  transform: scale(0.92);
+  opacity: 0.8;
+}
+
+.period-switcher .period-month {
+  flex: 1;
+}
+
+.period-switcher select {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  min-width: 0;
+}
+
+.period-today {
+  flex-shrink: 0;
+  border: none;
+  background: var(--primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.15s;
+}
+
+.period-today:active {
+  transform: scale(0.94);
+  opacity: 0.85;
+}
+
+/* ============================================
    OVERVIEW CARD
    ============================================ */
 .overview-card {

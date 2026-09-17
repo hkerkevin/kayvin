@@ -38,11 +38,13 @@ const state = {
   envelopes: [],
   transactions: [],
   currentView: 'setup',
+  viewPeriod: getCurrentPeriod(),
 };
 
 let db = null;
 let useFirebase = false;
 let unsubscribers = [];
+let txnUnsub = null;
 let editingEnvelopeId = null;
 let editingTransactionId = null;
 let selectedEnvelopeId = null;
@@ -203,12 +205,13 @@ async function joinHousehold(code) {
 }
 
 async function addTransactionData(envelopeId, amount, note, date) {
+  const finalDate = date || new Date().toISOString().split('T')[0];
   const txn = {
     envelopeId,
     amount: parseAmount(amount),
     note: note || '',
-    date: date || new Date().toISOString().split('T')[0],
-    period: getCurrentPeriod(),
+    date: finalDate,
+    period: finalDate.slice(0, 7),
     addedBy: state.user.name,
   };
 
@@ -292,7 +295,7 @@ async function deleteEnvelopeData(id) {
 }
 
 async function resetMonthData() {
-  const period = getCurrentPeriod();
+  const period = state.viewPeriod;
   if (useFirebase) {
     const txns = await db.collection('households').doc(state.householdId)
       .collection('transactions').where('period', '==', period).get();
@@ -309,6 +312,7 @@ async function resetMonthData() {
 function leaveHouseholdData() {
   unsubscribers.forEach(fn => fn());
   unsubscribers = [];
+  if (txnUnsub) { txnUnsub(); txnUnsub = null; }
   state.user = null;
   state.householdId = null;
   state.householdCode = null;
@@ -348,50 +352,59 @@ function setupListeners() {
       })
   );
 
-  // Transactions (current period + recent)
-  unsubscribers.push(
-    db.collection('households').doc(state.householdId)
-      .collection('transactions')
-      .orderBy('createdAt', 'desc')
-      .limit(500)
-      .onSnapshot(snap => {
-        state.transactions = snap.docs.map(d => {
-          const data = d.data();
-          return {
-            id: d.id,
-            ...data,
-            createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || '',
-          };
-        });
-        saveLocal();
-        renderAll();
-      })
-  );
+  // Transactions — scoped to the viewed year (superset of the viewed month;
+  // also covers annual-envelope totals). Resubscribed on year change.
+  subscribeTransactions();
+}
+
+function subscribeTransactions() {
+  if (!useFirebase || !state.householdId) return;
+
+  if (txnUnsub) { txnUnsub(); txnUnsub = null; }
+
+  const year = getViewYear();
+  txnUnsub = db.collection('households').doc(state.householdId)
+    .collection('transactions')
+    .where('period', '>=', `${year}-01`)
+    .where('period', '<=', `${year}-12`)
+    .onSnapshot(snap => {
+      state.transactions = snap.docs.map(d => {
+        const data = d.data();
+        return {
+          id: d.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || '',
+        };
+      });
+      saveLocal();
+      renderAll();
+    });
 }
 
 // ============================================
 // UI: DASHBOARD
 // ============================================
-function getCurrentYear() {
-  return String(new Date().getFullYear());
+// Year currently being viewed (drives annual envelope totals)
+function getViewYear() {
+  return state.viewPeriod.slice(0, 4);
 }
 
 function getSpent(envelopeId) {
   const env = state.envelopes.find(e => e.id === envelopeId);
   if (env?.type === 'annual') {
-    const year = getCurrentYear();
+    const year = getViewYear();
     return state.transactions
       .filter(t => t.envelopeId === envelopeId && (t.period || '').startsWith(year))
       .reduce((s, t) => s + t.amount, 0);
   }
-  const period = getCurrentPeriod();
+  const period = state.viewPeriod;
   return state.transactions
     .filter(t => t.envelopeId === envelopeId && t.period === period)
     .reduce((s, t) => s + t.amount, 0);
 }
 
 function renderDashboard() {
-  $('period-label').textContent = getPeriodLabel(getCurrentPeriod());
+  $('period-label').textContent = getPeriodLabel(state.viewPeriod);
   $('household-code-btn').textContent = state.householdCode || '';
 
   let monthlyBudget = 0, monthlySpent = 0;
@@ -479,8 +492,8 @@ function renderHistory() {
   filter.value = currentVal;
   if (!filter.value) filter.value = 'all';
 
-  const period = getCurrentPeriod();
-  const year = getCurrentYear();
+  const period = state.viewPeriod;
+  const year = getViewYear();
   const filterEnv = filter.value !== 'all' ? state.envelopes.find(e => e.id === filter.value) : null;
   const showYear = filterEnv?.type === 'annual';
 
@@ -495,7 +508,7 @@ function renderHistory() {
   list.innerHTML = '';
 
   if (txns.length === 0) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><p>No transactions this month.</p></div>';
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><p>No transactions for ${esc(showYear ? year : getPeriodLabel(period))}.</p></div>`;
     return;
   }
 
@@ -552,6 +565,13 @@ function renderSettings() {
   $('settings-email').textContent = state.user?.email || '-';
   $('settings-code').textContent = state.householdCode || '-';
 
+  // Month-scoped actions reflect whichever month the dashboard is currently viewing.
+  const monthLabel = getPeriodLabel(state.viewPeriod);
+  const exportSpan = $('btn-export-month')?.querySelector('span');
+  if (exportSpan) exportSpan.textContent = `Export ${monthLabel} (CSV)`;
+  const resetSpan = $('btn-reset-month')?.querySelector('span');
+  if (resetSpan) resetSpan.textContent = `Reset ${monthLabel}`;
+
   const membersList = $('settings-members-list');
   membersList.innerHTML = '';
   Object.entries(state.members).forEach(([uid, name]) => {
@@ -599,10 +619,77 @@ function renderSettings() {
 // UI: RENDER ALL
 // ============================================
 function renderAll() {
+  renderPeriodSwitchers();
   renderDashboard();
   renderHistory();
   renderSettings();
   renderEnvelopePicker();
+}
+
+// ============================================
+// PERIOD SWITCHER (view any month/year)
+// ============================================
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+
+function renderPeriodSwitchers() {
+  ['period-switcher-dashboard', 'period-switcher-history'].forEach(id => {
+    const el = $(id);
+    if (el) buildPeriodSwitcher(el);
+  });
+}
+
+function buildPeriodSwitcher(el) {
+  const [vy, vm] = state.viewPeriod.split('-').map(Number);
+  const nowYear = new Date().getFullYear();
+  const minYear = Math.min(nowYear - 5, vy);
+  const maxYear = Math.max(nowYear + 1, vy);
+  const isCurrent = state.viewPeriod === getCurrentPeriod();
+
+  let monthOpts = '';
+  for (let m = 1; m <= 12; m++) {
+    monthOpts += `<option value="${m}"${m === vm ? ' selected' : ''}>${MONTH_NAMES[m - 1]}</option>`;
+  }
+  let yearOpts = '';
+  for (let y = maxYear; y >= minYear; y--) {
+    yearOpts += `<option value="${y}"${y === vy ? ' selected' : ''}>${y}</option>`;
+  }
+
+  el.innerHTML = `
+    <button class="period-nav" data-dir="-1" aria-label="Previous month">‹</button>
+    <select class="period-month" aria-label="Month">${monthOpts}</select>
+    <select class="period-year" aria-label="Year">${yearOpts}</select>
+    <button class="period-nav" data-dir="1" aria-label="Next month">›</button>
+    <button class="period-today${isCurrent ? ' hidden' : ''}">Today</button>
+  `;
+
+  el.querySelectorAll('.period-nav').forEach(btn =>
+    btn.addEventListener('click', () => shiftViewPeriod(Number(btn.dataset.dir))));
+  el.querySelector('.period-month').addEventListener('change', e => {
+    const y = state.viewPeriod.split('-')[0];
+    setViewPeriod(`${y}-${String(Number(e.target.value)).padStart(2, '0')}`);
+  });
+  el.querySelector('.period-year').addEventListener('change', e => {
+    const m = state.viewPeriod.split('-')[1];
+    setViewPeriod(`${e.target.value}-${m}`);
+  });
+  el.querySelector('.period-today').addEventListener('click', () => setViewPeriod(getCurrentPeriod()));
+}
+
+function shiftViewPeriod(delta) {
+  let [y, m] = state.viewPeriod.split('-').map(Number);
+  m += delta;
+  while (m < 1) { m += 12; y--; }
+  while (m > 12) { m -= 12; y++; }
+  setViewPeriod(`${y}-${String(m).padStart(2, '0')}`);
+}
+
+function setViewPeriod(period) {
+  const prevYear = state.viewPeriod.slice(0, 4);
+  state.viewPeriod = period;
+  // The transaction listener is scoped to a single year — resubscribe only when the year changes.
+  if (useFirebase && period.slice(0, 4) !== prevYear) subscribeTransactions();
+  renderAll();
 }
 
 // ============================================
@@ -621,7 +708,9 @@ function showAddTransaction(preselectedEnvelopeId) {
   $('add-modal-title').textContent = 'Add Expense';
   $('input-amount').value = '';
   $('input-note').value = '';
-  $('input-date').value = new Date().toISOString().split('T')[0];
+  // Default the date into whatever month is being viewed (today if it's the current month).
+  const today = new Date().toISOString().split('T')[0];
+  $('input-date').value = state.viewPeriod === getCurrentPeriod() ? today : `${state.viewPeriod}-01`;
   selectedEnvelopeId = preselectedEnvelopeId || (state.envelopes[0]?.id || null);
   renderEnvelopePicker();
   showModal('modal-add');
@@ -674,6 +763,7 @@ async function saveTransaction() {
       amount: parseAmount(amount),
       note,
       date,
+      period: date.slice(0, 7),
     });
     hideModal('modal-add');
     toast('Updated');
@@ -787,11 +877,18 @@ function downloadFile(content, filename, mimeType) {
   URL.revokeObjectURL(url);
 }
 
-function exportTransactionsCSV(allMonths) {
-  const period = getCurrentPeriod();
-  let txns = allMonths
-    ? [...state.transactions]
-    : state.transactions.filter(t => t.period === period);
+async function exportTransactionsCSV(allMonths) {
+  const period = state.viewPeriod;
+  let txns;
+  if (allMonths && useFirebase) {
+    // The live listener only holds the viewed year — fetch the full history for a complete export.
+    const snap = await db.collection('households').doc(state.householdId).collection('transactions').get();
+    txns = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } else if (allMonths) {
+    txns = [...state.transactions];
+  } else {
+    txns = state.transactions.filter(t => t.period === period);
+  }
 
   if (txns.length === 0) {
     toast('No transactions to export');
@@ -1089,7 +1186,7 @@ function bindEvents() {
   });
 
   $('btn-reset-month').addEventListener('click', async () => {
-    if (!confirm('Delete all transactions for this month? This cannot be undone.')) return;
+    if (!confirm(`Delete all transactions for ${getPeriodLabel(state.viewPeriod)}? This cannot be undone.`)) return;
     await resetMonthData();
     toast('Month reset');
   });
@@ -1098,6 +1195,7 @@ function bindEvents() {
     if (!confirm('Leave this household? You can rejoin with the code.')) return;
     unsubscribers.forEach(fn => fn());
     unsubscribers = [];
+    if (txnUnsub) { txnUnsub(); txnUnsub = null; }
     state.householdId = null;
     state.householdCode = null;
     state.members = {};
@@ -1138,6 +1236,7 @@ function bindEvents() {
 // ENTER APP
 // ============================================
 function enterApp() {
+  state.viewPeriod = getCurrentPeriod();
   $('bottom-nav').classList.remove('hidden');
   $('fab').classList.remove('hidden');
   navigate('dashboard');
